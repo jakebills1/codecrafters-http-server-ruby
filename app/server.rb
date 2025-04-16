@@ -5,6 +5,10 @@ Warning[:experimental] = false
 
 class Request
   attr_accessor :verb, :target, :version, :headers, :body
+
+  def initialize
+    @headers = {}
+  end
 end
 class Response
   attr_accessor :version, :status, :body
@@ -15,6 +19,9 @@ class Response
       response.status = '200 OK'
     elsif request.target.start_with?('/echo')
       response.body = request.target.split('/').last
+      response.status = '200 OK'
+    elsif request.target.start_with?('/user-agent')
+      response.body = request.headers['User-Agent']
       response.status = '200 OK'
     else
       response.status = '404 Not Found'
@@ -39,6 +46,10 @@ while (client_socket, client_address = server.accept)
     line = socket.readline("\r\n", chomp: true)
     # read request line
     request.verb, request.target, request.version = line.split(' ')
+    while (line = socket.readline("\r\n", chomp: true)) != ""
+      header_key, header_value = line.split(' ')
+      request.headers[header_key.delete(':')] = header_value
+    end
     # puts request.verb, request.target, request.version
     socket.write Response.from_request(request)
   end
