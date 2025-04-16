@@ -6,4 +6,9 @@ print("Logs from your program will appear here!")
 # Uncomment this to pass the first stage
 #
 server = TCPServer.new("localhost", 4221)
-client_socket, client_address = server.accept
+
+while (client_socket, client_address = server.accept)
+  Ractor.new(client_socket) do |socket|
+    socket.write "HTTP/1.1 200 OK\r\n\r\n"
+  end
+end
