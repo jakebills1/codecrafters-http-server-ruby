@@ -1,14 +1,27 @@
 require "socket"
 
-# You can use print statements as follows for debugging, they'll be visible when running tests.
-print("Logs from your program will appear here!")
+# suppress warning about ractors
+Warning[:experimental] = false
 
-# Uncomment this to pass the first stage
-#
+class Request
+  attr_accessor :verb, :target, :version, :headers, :body
+end
+
 server = TCPServer.new("localhost", 4221)
 
 while (client_socket, client_address = server.accept)
   Ractor.new(client_socket) do |socket|
-    socket.write "HTTP/1.1 200 OK\r\n\r\n"
+    request = Request.new
+    line = socket.readline("\r\n", chomp: true)
+    # read request line
+    request.verb, request.target, request.version = line.split(' ')
+    # puts request.verb, request.target, request.version
+    status = if request.target != '/'
+               "404 Not Found"
+             else
+               "200 OK"
+             end
+    socket.write "#{request.version} #{status}\r\n\r\n"
   end
 end
+
