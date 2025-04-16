@@ -6,6 +6,30 @@ Warning[:experimental] = false
 class Request
   attr_accessor :verb, :target, :version, :headers, :body
 end
+class Response
+  attr_accessor :version, :status, :body
+  def self.from_request(request)
+    response = new
+    response.version = request.version
+    if request.target == '/'
+      response.status = '200 OK'
+    elsif request.target.start_with?('/echo')
+      response.body = request.target.split('/').last
+      response.status = '200 OK'
+    else
+      response.status = '404 Not Found'
+    end
+    response
+  end
+
+  def to_s
+    if body
+      "#{version} #{status}\r\nContent-Type: text/plain\r\nContent-Length: #{body.size}\r\n\r\n#{body}"
+    else
+      "#{version} #{status}\r\n\r\n"
+    end
+  end
+end
 
 server = TCPServer.new("localhost", 4221)
 
@@ -16,12 +40,7 @@ while (client_socket, client_address = server.accept)
     # read request line
     request.verb, request.target, request.version = line.split(' ')
     # puts request.verb, request.target, request.version
-    status = if request.target != '/'
-               "404 Not Found"
-             else
-               "200 OK"
-             end
-    socket.write "#{request.version} #{status}\r\n\r\n"
+    socket.write Response.from_request(request)
   end
 end
 
