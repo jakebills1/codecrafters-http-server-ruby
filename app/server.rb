@@ -8,10 +8,7 @@ OptionParser.new do |parser|
   end
 end.parse!
 
-# @options.freeze
-
-# suppress warning about ractors
-Warning[:experimental] = false
+OPTIONS.freeze
 
 class Request
   attr_accessor :verb, :target, :version, :headers, :body
@@ -37,7 +34,7 @@ class Response
     elsif request.target.start_with?('/user-agent')
       response.body = request.headers['User-Agent']
       response.status = '200 OK'
-    elsif request.target.start_with?('/files')
+    elsif request.target.start_with?('/files') && request.verb == 'GET'
       response.content_type = 'application/octet-stream'
       file_path = OPTIONS['file_dir'] + request.target.split('/').last
       if File.exist?(file_path)
@@ -47,6 +44,10 @@ class Response
       else
         response.status = '404 Not Found'
       end
+    elsif request.target.start_with?('/files') && request.verb == 'POST'
+      file_path = OPTIONS['file_dir'] + request.target.split('/').last
+      File.write(file_path, request.body)
+      response.status = '201 Created'
     else
       response.status = '404 Not Found'
     end
@@ -75,6 +76,10 @@ while (client_socket, client_address = server.accept)
     while (line = socket.readline("\r\n", chomp: true)) != ""
       header_key, header_value = line.split(' ')
       request.headers[header_key.delete(':')] = header_value
+    end
+    # read body
+    if (body_bytes = request.headers.dig('Content-Length'))
+      request.body = socket.read(body_bytes.to_i)
     end
     # puts request.verb, request.target, request.version
     socket.write Response.from_request(request)
