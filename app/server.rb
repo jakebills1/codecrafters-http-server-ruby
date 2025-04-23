@@ -1,5 +1,6 @@
 require "socket"
 require "optionparser"
+require 'logger'
 
 OPTIONS = {}
 OptionParser.new do |parser|
@@ -33,9 +34,10 @@ class Response
     when %w[GET /]
       response.status = '200 OK'
     when %w[GET /echo]
-      request_encoding = request.headers['Accept-Encoding']
-      if VALID_ENCODINGS.include? request_encoding
-        response.content_encoding = request_encoding
+      request_encodings = request.headers['Accept-Encoding']&.split(', ') || []
+      valid_encodings = VALID_ENCODINGS & request_encodings
+      unless valid_encodings.empty?
+        response.content_encoding = valid_encodings.first
       end
       response.body = request.target.split('/').last
       response.status = '200 OK'
@@ -103,8 +105,8 @@ while (client_socket, client_address = server.accept)
     request.verb, request.target, request.version = line.split(' ')
     # read headers
     while (line = socket.readline("\r\n", chomp: true)) != ""
-      header_key, header_value = line.split(' ')
-      request.headers[header_key.delete(':')] = header_value
+      header_key, header_value = line.split(':')
+      request.headers[header_key] = header_value.strip
     end
     # read body
     if (body_bytes = request.headers.dig('Content-Length'))

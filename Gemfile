@@ -4,3 +4,5 @@ source "https://rubygems.org"
 
 # Add gems here if you need to use them.
 # Make sure to run `bundle install` before running tests or submitting your code.
+
+gem "logger", "~> 1.7"
