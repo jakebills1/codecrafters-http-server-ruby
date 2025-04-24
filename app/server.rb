@@ -16,28 +16,38 @@ class HTTPServer
     loop do
       client_socket, _ = socket.accept
       Thread.new(client_socket) do |client|
-        request = Request.new
-        line = client.readline("\r\n", chomp: true)
-        # read request line
-        request.verb, request.target, request.version = line.split(' ')
-        # read headers
-        while (line = client.readline("\r\n", chomp: true)) != ""
-          header_key, header_value = line.split(':')
-          request.headers[header_key] = header_value.strip
+        begin
+          # request response cycle
+          while (line = get_line(client))
+            request = Request.new
+            # read request line
+            request.verb, request.target, request.version = line.split(' ')
+            # read headers
+            while (line = get_line(client)) != ""
+              header_key, header_value = line.split(':')
+              request.headers[header_key] = header_value.strip
+            end
+            # read body
+            if (body_bytes = request.headers.dig('Content-Length'))
+              request.body = client.read(body_bytes.to_i)
+            end
+            # write response
+            response = Response.from_request(request, options)
+            client.write response
+          end
+        rescue EOFError
+          client.close
         end
-        # read body
-        if (body_bytes = request.headers.dig('Content-Length'))
-          request.body = client.read(body_bytes.to_i)
-        end
-        # write response
-        response = Response.from_request(request, options)
-        client.write response
       end
     end
   end
 
   private
   attr_reader :socket, :options
+
+  def get_line(client)
+    client.readline("\r\n", chomp: true)
+  end
 end
 
 HTTPServer.new(Options.parse!).serve!
