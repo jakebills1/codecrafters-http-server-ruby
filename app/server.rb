@@ -1,6 +1,8 @@
-require "socket"
-require "optionparser"
+require 'socket'
+require 'optionparser'
 require 'logger'
+require 'zlib'
+
 
 OPTIONS = {}
 OptionParser.new do |parser|
@@ -39,7 +41,11 @@ class Response
       unless valid_encodings.empty?
         response.content_encoding = valid_encodings.first
       end
-      response.body = request.target.split('/').last
+      response.body = if response.content_encoding && response.content_encoding == 'gzip'
+                        Zlib.gzip request.target.split('/').last
+                      else
+                        request.target.split('/').last
+                      end
       response.status = '200 OK'
     when %w[GET /user-agent]
       response.body = request.headers['User-Agent']
@@ -82,8 +88,8 @@ class Response
     "#{version} #{status}"
   end
 
-  def to_s
-    "#{write_request_line}\r\n#{write_headers}\r\n#{write_body}"
+  def to_s(with_body: true)
+    "#{write_request_line}\r\n#{write_headers}\r\n#{with_body ? write_body : ''}"
   end
 
   # returns first path segment for matching purposes
@@ -113,7 +119,8 @@ while (client_socket, client_address = server.accept)
       request.body = socket.read(body_bytes.to_i)
     end
     # puts request.verb, request.target, request.version
-    socket.write Response.from_request(request)
+    response = Response.from_request(request)
+    socket.write response
   end
 end
 
