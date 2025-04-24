@@ -2,16 +2,18 @@
 
 class Response
   VALID_ENCODINGS = ['gzip'].freeze
-  attr_accessor :version, :status, :body, :content_type, :content_encoding
+  attr_accessor :version, :status, :body, :content_type, :content_encoding, :keep_open
 
   def initialize
     @content_type = 'text/plain'
+    @keep_open = true
   end
 
 
   def self.from_request(request, options)
     response = new
     response.version = request.version
+    response.keep_open = !(request.headers.dig('Connection') == 'close')
     case [request.verb, parse_path(request.target)]
     when %w[GET /]
       response.status = '200 OK'
@@ -55,6 +57,7 @@ class Response
     headers += "Content-Type: #{content_type}\r\n" if content_type
     headers += "Content-Length: #{body.bytesize}\r\n" if body
     headers += "Content-Encoding: #{content_encoding}\r\n" if content_encoding
+    headers += "Connection: close\r\n" unless keep_open
     headers
   end
 

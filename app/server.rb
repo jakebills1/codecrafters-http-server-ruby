@@ -34,6 +34,10 @@ class HTTPServer
             # write response
             response = Response.from_request(request, options)
             client.write response
+            unless response.keep_open
+              client.close
+              break
+            end
           end
         rescue EOFError
           client.close
