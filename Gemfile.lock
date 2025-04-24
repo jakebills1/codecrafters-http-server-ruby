@@ -2,6 +2,7 @@ GEM
   remote: https://rubygems.org/
   specs:
     logger (1.7.0)
+    zlib (3.2.1)
 
 PLATFORMS
   aarch64-linux-musl
@@ -12,6 +13,7 @@ PLATFORMS
 
 DEPENDENCIES
   logger (~> 1.7)
+  zlib (~> 3.2)
 
 BUNDLED WITH
    2.5.22

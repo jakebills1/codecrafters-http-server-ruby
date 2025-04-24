@@ -6,3 +6,4 @@ source "https://rubygems.org"
 # Make sure to run `bundle install` before running tests or submitting your code.
 
 gem "logger", "~> 1.7"
+
