@@ -6,9 +6,6 @@ require_relative 'lib/request'
 require_relative 'lib/response'
 require_relative 'lib/options'
 
-
-
-
 class HTTPServer
   def initialize(options)
     @socket = TCPServer.new("localhost", 4221)
@@ -32,7 +29,7 @@ class HTTPServer
         if (body_bytes = request.headers.dig('Content-Length'))
           request.body = client.read(body_bytes.to_i)
         end
-        # puts request.verb, request.target, request.version
+        # write response
         response = Response.from_request(request, options)
         client.write response
       end
